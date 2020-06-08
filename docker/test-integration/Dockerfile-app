@@ -1,0 +1,33 @@
+FROM python:3.6-alpine AS build
+
+RUN pip3 install pipenv
+RUN apk update && apk add --no-cache zip
+
+COPY ./Pipfile /Pipfile
+COPY ./Pipfile.lock /Pipfile.lock
+COPY ./build_dependencies.sh /build_dependencies.sh
+COPY ./dependencies /dependencies
+RUN chmod +x /build_dependencies.sh && sh ./build_dependencies.sh
+RUN touch /requirements.txt
+RUN pipenv lock -r > /requirements.txt
+
+FROM bde2020/spark-submit:2.4.0-hadoop2.7
+
+COPY --from=build /requirements.txt /app/requirements.txt
+COPY --from=build /packages.zip /app/packages.zip
+
+RUN cd /app \
+      && pip3 install -r requirements.txt
+
+COPY ./configs/etl_config.json /app/configs/etl_config.json
+COPY ./jobs/etl_job.py /app/jobs/etl_job.py
+
+ENV SPARK_APPLICATION_PYTHON_LOCATION "/app/jobs/etl_job.py"
+ENV SPARK_SUBMIT_ARGS "--py-files /app/packages.zip --files /app/configs/etl_config.json"
+
+COPY ./docker/wait.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/wait.sh
+ENTRYPOINT ["/usr/local/bin/wait.sh"]
+
+CMD ["/bin/bash", "/submit.sh"]

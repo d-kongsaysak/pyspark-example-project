@@ -50,15 +50,18 @@ def main():
         files=['configs/etl_config.json'])
 
     # log that main ETL job is starting
-    log.warn('etl_job is up-and-running')
+    log.info('etl_job is up-and-running')
 
     # execute ETL pipeline
+    log.info('extract_data')
     data = extract_data(spark)
+    log.info('transform_data')
     data_transformed = transform_data(data, config['steps_per_floor'])
+    log.info('load_data')
     load_data(data_transformed)
 
     # log the success and terminate Spark application
-    log.warn('test_etl_job is finished')
+    log.info('test_etl_job is finished')
     spark.stop()
     return None
 
