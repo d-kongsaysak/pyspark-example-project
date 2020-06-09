@@ -6,7 +6,6 @@ Module containing helper function for use with Apache Spark
 """
 
 import __main__
-
 from os import environ, listdir, path
 import json
 from pyspark import SparkFiles
